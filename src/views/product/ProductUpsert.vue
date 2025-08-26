@@ -3,7 +3,7 @@
     <div class="row border p-4 my-5 rounded">
       <div class="col-9">
         <form v-on:submit.prevent="handleSubmit">
-          <div class="h2 text-center text-success">Create Product</div>
+          <div class="h2 text-center text-success">{{ productIdForUpdate? "Update": "Create" }} Product</div>
           <hr />
           <div v-if="errorList.length>0" class="alert alert-danger pb-0">
             Please fix the following errors:
@@ -54,7 +54,7 @@
             <button class="btn btn-success m-2 w-25" :disabled="loading">
               <span v-if="loading" class="spinner-border spinner-border-sm me-2"></span>Submit
             </button>
-            <a href="/" class="btn btn-secondary m-2 w-25"> Cancel </a>
+            <router-link :to="{name: APP_ROUTE_NAMES.PRODUCT_LIST}" class="btn btn-secondary m-2 w-25"> Cancel </router-link>
           </div>
         </form>
       </div>
@@ -76,7 +76,10 @@ import {reactive, ref, onMounted} from 'vue'
 import { useRouter, useRoute } from 'vue-router';
 import { PRODUCT_CATEGORIES } from '@/constants/appConstant';
 import { useSwal } from '@/stores/utility/useSwal';
+import productServices from '@/services/productServices';
+import { APP_ROUTE_NAMES } from '@/constants/routeNames';
 const {showSuccess, showError, showConfirm} = useSwal();
+const router = useRouter();
 const route = useRoute();
 const loading = ref(false)
 const errorList = reactive([]);
@@ -92,11 +95,26 @@ const productObj = reactive({
     image: 'https://placehold.co/600x400'
 });
 
-onMounted(()=>{
-    showSuccess("Product Created Successfully");
-    // showError("Product Creation Failed");
-    // showConfirm("Are You Sure?");
-}),
+onMounted(async()=>{
+    if(!productIdForUpdate) return;
+    loading.value = true
+    try {
+        const product = await productServices.getProductById(productIdForUpdate)
+        Object.assign(productObj, {...product, tags: product.tags.join(', ')})
+    }
+    
+    catch (e) {
+        console.log(e)
+    }
+    finally{
+        loading.value = false
+    }
+})
+
+// onMounted(()=>{
+//     showError("Product Creation Failed");
+//     showConfirm("Are You Sure?");
+// }),
 
 async function handleSubmit(){
     try {
@@ -104,7 +122,7 @@ async function handleSubmit(){
         errorList.length =0;
 
         // validation
-        if(productObj.name.length >3<10 ){
+        if(productObj.name.length <3 ){
             errorList.push("Name is required and at least 3 character")
         }
 
@@ -122,10 +140,21 @@ async function handleSubmit(){
             ...productObj,
             price: Number(productObj.price),
             salePrice: productObj.salePrice? Number(productObj.salePrice) : null,
-            tags: productObj.tags.split(',').map((tag) => tag.trim()),
+            tags: productObj.tags.length>0? productObj.tags.split(',').map((tag) => tag.trim()): [],
             bestseller: Boolean(productObj.isBestSeller),
         };
-        await new Promise((resolve) => setTimeout(resolve, 2000));
+
+        if(productIdForUpdate){
+            await productServices.createProduct(productData);
+        showSuccess("Product Updated Successfully");
+        }
+        else{
+            await productServices.createProduct(productIdForUpdate, productData);
+        showSuccess("Product Created Successfully");
+        }
+        // await new Promise((resolve) => setTimeout(resolve, 2000));
+        
+        router.push({name:APP_ROUTE_NAMES.PRODUCT_LIST})
         console.log(productData);
         }
     } 

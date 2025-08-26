@@ -45,13 +45,17 @@
         </li>
 
         <!-- Sign in -->
-        <li class="nav-item">
+        <li class="nav-item" v-if="!authStore.isAuthenticated">
           <router-link class="nav-link active" aria-current="page" :to="{ name: APP_ROUTE_NAMES.SIGN_IN }">Sign In</router-link>
         </li>
 
         <!-- sign up -->
-         <li class="nav-item">
+         <li class="nav-item" v-if="!authStore.isAuthenticated">
           <router-link class="nav-link active" aria-current="page" :to="{ name: APP_ROUTE_NAMES.SIGN_UP }">Sign Up</router-link>
+        </li>
+
+        <li class="nav-item" v-if="authStore.isAuthenticated">
+            <button class="nav-link">Sign Out</button>
         </li>
       </ul>
     </div>
@@ -63,8 +67,10 @@
 import { APP_ROUTE_NAMES } from '@/constants/routeNames';
 import { useRouter } from 'vue-router';
 import { useThemeStore } from '@/stores/themeStore';
+import { useAuthStore } from '@/stores/authStore';
 
 const themeStore = useThemeStore();
+const authStore = useAuthStore()
 const router = useRouter();
 </script>
 
