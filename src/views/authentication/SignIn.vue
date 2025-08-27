@@ -57,7 +57,7 @@ const handleSignIn = async () =>{
     try {
         error.value =""    
         console.log(form)
-        authStore.signInUser(form.email, form.password)
+        await authStore.signInUser(form.email, form.password)
         router.push({name: APP_ROUTE_NAMES.HOME})
     } 
     

@@ -16,11 +16,15 @@
         </li>
         
         <li class="nav-item">
-          <router-link class="nav-link active" aria-current="page" :to="{ name: APP_ROUTE_NAMES.PRODUCT_CREATE }">Add Product</router-link>
+          <router-link class="nav-link active" aria-current="page" :to="{ name: APP_ROUTE_NAMES.CONTACT_US }">Contact Us</router-link>
         </li>
         
       </ul>
       <ul class="d-flex navbar-nav">
+        <li class="nav-link" v-if="authStore.isAuthenticated">
+            Welcome, {{ authStore.user?.email }}
+
+        </li>
         <li class="nav-item dropdown">
           <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
             <i class="bi bi-laptop"></i>
@@ -55,7 +59,7 @@
         </li>
 
         <li class="nav-item" v-if="authStore.isAuthenticated">
-            <button class="nav-link">Sign Out</button>
+            <button @click="[authStore.signOutUser(), router.push({ name: APP_ROUTE_NAMES.HOME})]" class="nav-link">Sign Out</button>
         </li>
       </ul>
     </div>
@@ -75,5 +79,8 @@ const router = useRouter();
 </script>
 
 <style scoped>
-
+.nav-link:hover{
+  
+  text-decoration-line: underline;
+}
 </style>

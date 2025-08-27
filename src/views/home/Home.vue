@@ -1,23 +1,24 @@
 <template>
     
-  components: { ProductCard },<div>
+<div>
     <div
       class="bg-success w-100 position-relative overflow-hidden mb-4 py-5 d-flex align-items-center"
       style="
-        background-image: url('');
-        background-size: cover;
+        background-image: url('https://i.ytimg.com/vi/BIuwf5sKSFE/maxresdefault.jpg?sqp=-oaymwEmCIAKENAF8quKqQMa8AEB-AH-CYAC0AWKAgwIABABGHIgVSgsMA8=&rs=AOn4CLBWAc4LpSYwNfmzeFjVBmxC8_-qKQ');
+        background-size:cover;
+        background-repeat: no-repeat;
         background-position: center;
         min-height: 400px;
       "
     >
       <div
-        class="position-absolute top-0 start-0 w-100 h-100 bg-success opacity-50"
+        class="position-absolute top-0 start-0 w-100 h-100  opacity-50"
       ></div>
 
       <div class="container-fluid position-relative z-1">
         <div class="row justify-content-center text-center">
           <div class="col-lg-8 col-xl-7">
-            <h1 class="display-4 fw-bold text-white mb-4">
+            <h1 class="display-4 fw-bold text-black mb-4">
               Your One-Stop Stone Shop
               <br class="d-none d-lg-block" />
               Premium Granite & Quartz for Every Style!
@@ -37,6 +38,12 @@
         </div>
       </div>
     </div>
+
+    <div>
+      <achievement></achievement>
+    </div>
+    
+<!-- other section -->
 
     <div id="product-list" class="container">
       <h2 class="mb-5 text-center display-6">Discover Our Collection</h2>
@@ -90,7 +97,9 @@
 import { computed, onMounted, ref } from 'vue';
 import productServices from '@/services/productServices';
 import ProductCard from '@/components/product/ProductCard.vue';
+import achievement from '@/components/layout/achievement.vue';
 import { PRODUCT_CATEGORIES, SORT_NAME_A_Z, SORT_NAME_Z_A, SORT_OPTIONS, SORT_PRICE_HIGH_LOW, SORT_PRICE_LOW_HIGH } from '@/constants/appConstant';
+import achievementVue from '@/components/layout/achievement.vue';
 
 const products = ref([])
 const loading = ref(false)
@@ -151,5 +160,7 @@ const filteredProductList = computed(() =>{
 </script>
 
 <style scoped>
-
+.highlight{
+  /* color: rgb(43, 0, 255) !important; */
+}
 </style>

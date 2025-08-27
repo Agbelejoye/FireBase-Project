@@ -3,7 +3,7 @@
     <div class="row border p-4 my-5 rounded">
       <div class="col-9">
         <form v-on:submit.prevent="handleSubmit">
-          <div class="h2 text-center text-success">{{ productIdForUpdate? "Update": "Create" }} Product</div>
+          <div class="h2 text-center text-success">{{ productIdForUpdate? "Update" : "Create" }} Product</div>
           <hr />
           <div v-if="errorList.length>0" class="alert alert-danger pb-0">
             Please fix the following errors:
@@ -47,12 +47,12 @@
           <div class="mb-3">
             <label class="form-label">Image</label>
             <div class="input-group">
-              <input type="file" class="form-control" />
+              <input type="file" @change="handleImageUpload" :disabled="isImageLoading" class="form-control" />
             </div>
           </div>
           <div class="pt-3">
-            <button class="btn btn-success m-2 w-25" :disabled="loading">
-              <span v-if="loading" class="spinner-border spinner-border-sm me-2"></span>Submit
+            <button class="btn btn-success m-2 w-25" :disabled="loading || isImageLoading">
+              <span v-if="loading || isImageLoading" class="spinner-border spinner-border-sm me-2"></span>Submit
             </button>
             <router-link :to="{name: APP_ROUTE_NAMES.PRODUCT_LIST}" class="btn btn-secondary m-2 w-25"> Cancel </router-link>
           </div>
@@ -60,7 +60,7 @@
       </div>
       <div class="col-3">
         <img
-          :src="`https://placehold.co/600x400`"
+          :src="productObj.image"
           class="img-fluid w-100 m-3 p-3 rounded"
           alt="Product
         preview"
@@ -78,11 +78,14 @@ import { PRODUCT_CATEGORIES } from '@/constants/appConstant';
 import { useSwal } from '@/stores/utility/useSwal';
 import productServices from '@/services/productServices';
 import { APP_ROUTE_NAMES } from '@/constants/routeNames';
+import { uploadToCloudinary } from '@/stores/utility/cloudinary';
 const {showSuccess, showError, showConfirm} = useSwal();
 const router = useRouter();
 const route = useRoute();
 const loading = ref(false)
+const isImageLoading = ref(false)
 const errorList = reactive([]);
+const productIdForUpdate = ref(null);
 
 const productObj = reactive({
     name: '',
@@ -95,79 +98,175 @@ const productObj = reactive({
     image: 'https://placehold.co/600x400'
 });
 
-onMounted(async()=>{
-    if(!productIdForUpdate) return;
-    loading.value = true
-    try {
-        const product = await productServices.getProductById(productIdForUpdate)
-        Object.assign(productObj, {...product, tags: product.tags.join(', ')})
-    }
+// onMounted(async()=>{
+//     // if(!productIdForUpdate) return;
+//     const productIdForUpdate = route.params.id || null;
+
+//     loading.value = true
+//     try {
+//         const product = await productServices.getProductById(productIdForUpdate)
+//         Object.assign(productObj, {...product, tags: product.tags.join(', ')})
+//     }
     
-    catch (e) {
-        console.log(e)
+//     catch (e) {
+//         console.log(e)
+//     }
+//     finally{
+//         loading.value = false
+//     }
+// })
+
+
+onMounted(async () => {
+  productIdForUpdate.value = route.params.id || null;
+
+  if (!productIdForUpdate.value) return;
+
+  loading.value = true;
+  try {
+    const product = await productServices.getProductById(productIdForUpdate.value);
+    Object.assign(productObj, { ...product, tags: product.tags.join(', ') });
+  } catch (e) {
+    console.log(e);
+  } finally {
+    loading.value = false;
+  }
+});
+
+
+
+
+async function handleSubmit() {
+  try {
+    loading.value = true;
+    errorList.length = 0;
+
+    // validation
+    if (productObj.name.length < 3) {
+      errorList.push("Name is required and at least 3 characters");
     }
-    finally{
-        loading.value = false
+
+    if (productObj.price <= 0) {
+      errorList.push("Price should be a valid number");
     }
-})
 
-// onMounted(()=>{
-//     showError("Product Creation Failed");
-//     showConfirm("Are You Sure?");
-// }),
+    if (productObj.category === '') {
+      errorList.push("Kindly select a category");
+    }
 
-async function handleSubmit(){
-    try {
-        loading.value=true;
-        errorList.length =0;
+    if (!errorList.length) {
+      const productData = {
+        ...productObj,
+        price: Number(productObj.price),
+        salePrice: productObj.salePrice ? Number(productObj.salePrice) : null,
+        tags: productObj.tags.length > 0
+          ? productObj.tags.split(',').map((tag) => tag.trim())
+          : [],
+        bestseller: Boolean(productObj.isBestSeller),
+      };
 
-        // validation
-        if(productObj.name.length <3 ){
-            errorList.push("Name is required and at least 3 character")
-        }
-
-        if(productObj.price<=0){
-            errorList.push('Price should be a valid number')
-        }
-        
-        if(productObj.category === ''){
-            errorList.push('Kindly Select a category')
-        }
-
-        if(!errorList.length){
-
-        const productData = {
-            ...productObj,
-            price: Number(productObj.price),
-            salePrice: productObj.salePrice? Number(productObj.salePrice) : null,
-            tags: productObj.tags.length>0? productObj.tags.split(',').map((tag) => tag.trim()): [],
-            bestseller: Boolean(productObj.isBestSeller),
-        };
-
-        if(productIdForUpdate){
-            await productServices.createProduct(productData);
+      if (productIdForUpdate.value) {
+        await productServices.updateProduct(productIdForUpdate.value, productData);
         showSuccess("Product Updated Successfully");
-        }
-        else{
-            await productServices.createProduct(productIdForUpdate, productData);
+      } else {
+        await productServices.createProduct(productData);
         showSuccess("Product Created Successfully");
-        }
-        // await new Promise((resolve) => setTimeout(resolve, 2000));
+      }
+
+      router.push({ name: APP_ROUTE_NAMES.PRODUCT_LIST });
+      console.log(productData);
+    }
+  } catch (e) {
+    console.log(e);
+  } finally {
+    loading.value = false;
+  }
+  console.log(productObj);
+}
+
+
+// async function handleSubmit(){
+//     try {
+//         loading.value=true;
+//         errorList.length =0;
+
+//         // validation
+//         if(productObj.name.length <3 ){
+//             errorList.push("Name is required and at least 3 character")
+//         }
+
+//         if(productObj.price<=0){
+//             errorList.push('Price should be a valid number')
+//         }
         
-        router.push({name:APP_ROUTE_NAMES.PRODUCT_LIST})
-        console.log(productData);
-        }
+//         if(productObj.category === ''){
+//             errorList.push('Kindly Select a category')
+//         }
+
+//         if(!errorList.length){
+
+//         const productData = {
+//             ...productObj,
+//             price: Number(productObj.price),
+//             salePrice: productObj.salePrice? Number(productObj.salePrice) : null,
+//             tags: productObj.tags.length>0? productObj.tags.split(',').map((tag) => tag.trim()): [],
+//             bestseller: Boolean(productObj.isBestSeller),
+//         };
+
+//         // if(productIdForUpdate){
+//         //     await productServices.createProduct(productData);
+//         // showSuccess("Product Updated Successfully");
+//         // }
+//         // else{
+//         //     await productServices.createProduct(productIdForUpdate, productData);
+//         // showSuccess("Product Created Successfully");
+//         // }
+
+//         if (productIdForUpdate) {
+//   await productServices.updateProduct(productIdForUpdate, productData);
+//   showSuccess("Product Updated Successfully");
+// } else {
+//   await productServices.createProduct(productData);
+//   showSuccess("Product Created Successfully");
+// }
+
+//         // await new Promise((resolve) => setTimeout(resolve, 2000));
+        
+//         router.push({name:APP_ROUTE_NAMES.PRODUCT_LIST})
+//         console.log(productData);
+//         }
+//     } 
+    
+//     catch (e) {
+//         console.log(e)
+//     }
+
+//     finally{
+//         loading.value=false;
+//     }
+//     console.log(productObj)
+// }
+
+async function handleImageUpload(event){
+    const file = event.target.files[0]
+    if(!file) return
+
+    try {
+        isImageLoading.value = true
+        const imageUrl = await uploadToCloudinary(file)
+        productObj.image = imageUrl
     } 
     
     catch (e) {
         console.log(e)
+        throw e
     }
 
     finally{
-        loading.value=false;
+        isImageLoading.value = false
     }
-    console.log(productObj)
 }
+
 </script>
 
 <style scoped></style>
